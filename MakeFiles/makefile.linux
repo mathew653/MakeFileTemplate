@@ -1,0 +1,95 @@
+#By default we use the all segment.
+.DEFAULT_GOAL := all
+
+#Compiler setup
+OS_TYPE=LINUX
+
+#C
+#CC = i586-mingw32msvc-gcc
+CC = gcc
+
+#C++
+#CXX = i586-mingw32msvc-g++ -msse2 -masm=intel
+CXX = g++ -msse2 -masm=intel -std=c++0x
+
+#Compiler flags
+
+#C
+# -D_BROKEN_MINGW_STRING if we need to include string fixes
+CFLAGS = -c -Wall -D$(OS_TYPE)_BUILD
+
+#C++
+CXXFLAGS =
+
+#C preprocessor flags
+CPPFLAGS = 
+
+#Static link(distribute)
+#_LINKFLAGS = -s
+#gdb symbols(debug)
+_LINKFLAGS = -ggdb
+
+#Linker flags
+_LINKFLAGS += -static-libgcc -static-libstdc++
+
+#Required librarys.
+_LIBS = 
+
+include Files.mk
+
+_OBJ_DIR = objects
+
+#Prefix our object folder to our object files(assuming they equate to .cpp files).
+_OBJ_LIST = $(patsubst %,$(_OBJ_DIR)/%,$(_OBJECTS))
+
+#Generate our folder lists
+_FOLDER_LIST = $(patsubst %,$(_OBJ_DIR)\\%,$(_FOLDERS))
+
+_output_dir = output
+_output = $(_AppName)
+
+#For make to always run a section it must be marked as phony.
+.PHONY: clean $(_FOLDERS)
+
+#prebuild steps
+prebuild: $(_FOLDER_LIST)
+#	@$(foreach dir,$(_FOLDERS),echo [prebuild]Creating sub directory : $(_OBJ_DIR)/$(dir);)
+#	@$(foreach dir,$(_FOLDERS),mkdir $(_OBJ_DIR)/$(dir);)
+
+#Our all segment depends on the object list given above, so it will build from those.
+all: prebuild $(_OBJ_LIST)
+	@echo [linker]Building bininary : $(_output_dir)/$(_output)
+	@$(CXX) $(_OBJ_LIST) -o $(_output_dir)/$(_output) $(_LINKFLAGS) $(_LIBS)
+
+#Generate or remove folders
+$(_OBJ_DIR)\\% : %
+ifneq ($(MAKECMDGOALS),clean)
+	@echo [prebuild]Creating sub directory : $(_OBJ_DIR)/$<
+	@mkdir $(_OBJ_DIR)/$<
+else
+	@echo [cleanup]Cleaning object subdir : $(_OBJ_DIR)/$<
+	@rm -f $(_OBJ_DIR)/$<\*.o
+	@rmdir $(_OBJ_DIR)/$<
+endif
+	
+#Build statement for creating object code from our cpp files(g++ used here instead of gcc)
+$(_OBJ_DIR)/%.o: %.cpp 
+	@echo [compile]src : $<
+	@$(CXX) $(CFLAGS) $< -o $@
+
+#Build statement for creating object code from our c files(gcc used here instead of g++)
+$(_OBJ_DIR)/%.o: %.c 
+	@echo [compile]src : $<
+	@$(CC) $(CFLAGS) $< -o $@
+	
+#Linking res files(For now we don't need this under wine builds)
+#$(_OBJ_DIR)\\%.o: %.rc
+#	@echo [compile]res : $<
+#	@windres.exe $< $@
+
+clean: $(_FOLDER_LIST)
+#	@$(foreach dir,$(_FOLDERS),echo [cleanup]Cleaning object subdir : $(_OBJ_DIR)/$(dir);)
+#	@$(foreach dir,$(_FOLDERS),rm -f $(_OBJ_DIR)/$(dir)/*.o;)
+#	@$(foreach dir,$(_FOLDERS),rmdir $(_OBJ_DIR)/$(dir);)
+	@echo [cleanup]Clean : Object directory
+	@rm ./$(_OBJ_DIR)/*.o
