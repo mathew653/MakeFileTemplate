@@ -1,5 +1,7 @@
 MakeFileTemplate version 3.1  
 
+These makefiles are targeted at compiling a c/c++ application quickly from a command line or batch script.
+
 This is the current iteration of the makefile system I use for maintaining projects I have been developing it currently targets the following platforms:  
 Win32  
 Wine  
